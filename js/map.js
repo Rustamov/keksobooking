@@ -1,5 +1,7 @@
-const map = L.map('map-canvas');
+import { getCurrentFilters, FILTERS } from './filter.js';
 
+const map = L.map('map-canvas');
+const MARKERS_SHOW_COUNT = 10;
 
 const setMapLoad = (cb) => {
   map
@@ -56,24 +58,41 @@ const getPhotos = (photos) => {
   return parentNode;
 };
 
+
+const getCapacityStr = (roomsCount, guestsCount) => {
+  let roomStr = 'комнаты';
+  let guestStr = 'гостей';
+
+  if (roomsCount === 1) {
+    roomStr = 'комната';
+  }
+
+  if (guestsCount === 1) {
+    guestStr = 'гостя';
+  }
+
+  return `${roomsCount} ${roomStr} для ${guestsCount} ${guestStr}`;
+};
+
 const createCustomBallon = ({ author, location, offer }) => {
   const balloonTemplate = document.querySelector('#card').content.querySelector('.popup');
   const baloonElement = balloonTemplate.cloneNode(true);
 
-  console.log(author, location, offer);
 
   baloonElement.querySelector('.popup__avatar').src = author.avatar;
   baloonElement.querySelector('.popup__title').textContent = offer.address;
   baloonElement.querySelector('.popup__text--address').textContent = offer.title;
-  baloonElement.querySelector('.popup__text--price').textContent = offer.price;
+
+  baloonElement.querySelector('.popup__text--price').textContent = `${offer.price  } `;
+  baloonElement.querySelector('.popup__text--price').innerHTML += '<span>₽/ночь</span>';
+
   baloonElement.querySelector('.popup__type').textContent = offer.type;
-  baloonElement.querySelector('.popup__text--capacity').textContent = `${offer.rooms} комнаты для ${offer.guests} гостей`; //TODO endings
+  baloonElement.querySelector('.popup__text--capacity').textContent = getCapacityStr(offer.rooms, offer.guests);
   baloonElement.querySelector('.popup__text--time').textContent = `Заезд после ${offer.checkin}, выезд до  ${offer.checkout}`;
 
   if (offer.features === undefined || offer.features.length === 0) {
     baloonElement.querySelector('.popup__features').remove();
   } else {
-    // baloonElement.innerHtml = '';
     baloonElement.querySelector('.popup__features').replaceWith(getFeatures(offer.features));
   }
 
@@ -109,13 +128,80 @@ const createMarker = (place) => {
     .bindPopup(createCustomBallon(place));
 };
 
+const getSortedPlaces = (places) => {
+  let sortedPlaces = places.slice(0);
 
-const addMarkers = (places) => {
-  places.forEach((place) => {
-    createMarker(place);
+  const filters = getCurrentFilters();
+
+  const isPriceInDiapason = (price) => {
+    switch (filters.price) {
+      case 'middle':
+        if (10000 <= price && 50000 >= price) {
+          return true;
+        }
+        return false;
+
+      case 'low':
+        if (10000 > price) {
+          return true;
+        }
+        return false;
+
+      case 'high':
+        if (50000 < price) {
+          return true;
+        }
+        return false;
+
+      default:
+        return false;
+    }
+  };
+
+  sortedPlaces = sortedPlaces.filter((place) => {
+    const { type, price, rooms, guests, features } = place.offer;
+
+    if (filters.type !== 'any' && filters.type !== type) {
+      return false;
+    }
+    if (filters.price !== 'any' && price !== undefined && !isPriceInDiapason(price)) {
+      return false;
+    }
+    if (filters.rooms !== 'any' && +filters.rooms !== rooms) {
+      return false;
+    }
+    if (filters.guests !== 'any' && +filters.guests !== guests) {
+      return false;
+    }
+
+    for (const feature of Object.entries(filters.features)) {
+      const [name, isChecked] = feature;
+
+      if (isChecked && features === undefined) {
+        return false;
+      }
+      if (isChecked && !features.includes(name)) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
 
+  return sortedPlaces;
 };
 
-export { addMarkers, setMapLoad };
+const renderMarkers = (placesData) => {
+  const places = getSortedPlaces(placesData);
+
+  console.log(places);
+
+  markerGroup.clearLayers();
+
+  places.slice(0, MARKERS_SHOW_COUNT).forEach((place) => {
+    createMarker(place);
+  });
+};
+
+export { renderMarkers, setMapLoad };

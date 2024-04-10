@@ -1,14 +1,22 @@
-import { showAlert } from './util.js';
+import { showAlert, debounce } from './util.js';
 import { adFormInit } from './ad-form.js';
-import './filter.js';
-import { addMarkers, setMapLoad } from './map.js';
+import { filterInit, setFilterChange } from './filter.js';
+import { renderMarkers, setMapLoad } from './map.js';
 import { getData } from './api.js';
+
+const RERENDER_DELAY = 500;
 
 getData(
   (places) => {
     setMapLoad(() => {
       adFormInit();
-      addMarkers(places);
+      filterInit();
+      renderMarkers(places);
+
+      setFilterChange(debounce(
+        () => {renderMarkers(places);},
+        RERENDER_DELAY,
+      ));
 
       console.log(places[10]);
     });

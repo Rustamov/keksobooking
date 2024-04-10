@@ -90,6 +90,7 @@ const showAlert = (message) => {
   alertContainer.style.top = 0;
   alertContainer.style.right = 0;
   alertContainer.style.padding = '10px 3px';
+  alertContainer.style.color = '#eee';
   alertContainer.style.fontSize = '30px';
   alertContainer.style.textAlign = 'center';
   alertContainer.style.backgroundColor = 'red';
@@ -116,7 +117,6 @@ const getClickedChildWithClass = (parent, clickedNode, childElementClass) => {
 
   return needNode !== parent ? needNode : false;
 };
-
 
 export {
   getRandomPositiveInteger,
