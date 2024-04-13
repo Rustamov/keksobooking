@@ -1,9 +1,6 @@
 import { getClickedChildWithClass } from './util.js';
 
 const filterFormNode = document.querySelector('.map__filters');
-// const filterFormNode = filterFormNode.querySelector('.img-filters__form');
-// const filterButtons = filterFormNode.querySelectorAll('.img-filters__button');
-// const buttonActiveClass = 'img-filters__button--active';
 
 const FILTERS = {
   TYPE: {

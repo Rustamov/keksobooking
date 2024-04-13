@@ -2,16 +2,20 @@ import { getCurrentFilters, FILTERS } from './filter.js';
 
 const map = L.map('map-canvas');
 const MARKERS_SHOW_COUNT = 10;
+const MapStartCoords = {
+  LAT: 35.65935818784681,
+  LNG: 139.78305159450522,
+};
 
 const setMapLoad = (cb) => {
   map
     .on('load', () => {
     })
-    .setView([35.65935818784681, 139.78305159450522], 12.5);
+    .setView([MapStartCoords.LAT, MapStartCoords.LNG], 12.5);
 
   cb();
-};
 
+};
 
 L.tileLayer(
   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -25,6 +29,15 @@ const icon = L.icon({
   iconSize: [40, 40],
   iconAnchor: [20, 40],
 });
+
+const iconPickAddress = L.icon({
+  iconUrl: './img/main-pin.svg',
+  iconSize: [52, 52],
+  iconAnchor: [26, 50],
+});
+
+const markerGroup = L.layerGroup().addTo(map);
+
 
 const getFeatures = (features) => {
   const listNode = document.createElement('ul');
@@ -58,7 +71,6 @@ const getPhotos = (photos) => {
   return parentNode;
 };
 
-
 const getCapacityStr = (roomsCount, guestsCount) => {
   let roomStr = 'комнаты';
   let guestStr = 'гостей';
@@ -78,12 +90,11 @@ const createCustomBallon = ({ author, location, offer }) => {
   const balloonTemplate = document.querySelector('#card').content.querySelector('.popup');
   const baloonElement = balloonTemplate.cloneNode(true);
 
-
   baloonElement.querySelector('.popup__avatar').src = author.avatar;
   baloonElement.querySelector('.popup__title').textContent = offer.address;
   baloonElement.querySelector('.popup__text--address').textContent = offer.title;
 
-  baloonElement.querySelector('.popup__text--price').textContent = `${offer.price  } `;
+  baloonElement.querySelector('.popup__text--price').textContent = `${offer.price} `;
   baloonElement.querySelector('.popup__text--price').innerHTML += '<span>₽/ночь</span>';
 
   baloonElement.querySelector('.popup__type').textContent = offer.type;
@@ -107,7 +118,6 @@ const createCustomBallon = ({ author, location, offer }) => {
   return baloonElement;
 };
 
-const markerGroup = L.layerGroup().addTo(map);
 
 const createMarker = (place) => {
   const lat = place.location.lat,
@@ -174,7 +184,8 @@ const getSortedPlaces = (places) => {
       return false;
     }
 
-    for (const feature of Object.entries(filters.features)) {
+    const filterFeatures = Object.entries(filters.features); //[[name, isChecked], ...]
+    for (const feature of filterFeatures) {
       const [name, isChecked] = feature;
 
       if (isChecked && features === undefined) {
@@ -188,11 +199,10 @@ const getSortedPlaces = (places) => {
     return true;
   });
 
-
   return sortedPlaces;
 };
 
-const renderMarkers = (placesData) => {
+const renderMarkers = (placesData, setCallbacks) => {
   const places = getSortedPlaces(placesData);
 
   console.log(places);
@@ -202,6 +212,55 @@ const renderMarkers = (placesData) => {
   places.slice(0, MARKERS_SHOW_COUNT).forEach((place) => {
     createMarker(place);
   });
+
+  createPickAddresMarker();
+
+  setCallbacks();
 };
 
-export { renderMarkers, setMapLoad };
+const pickAddresMarkerData = {
+  lat: MapStartCoords.LAT,
+  lng: MapStartCoords.LNG,
+}
+
+let pickAddresMarker;
+
+const createPickAddresMarker = () => {
+  const lat = pickAddresMarkerData.lat,
+    lng = pickAddresMarkerData.lng;
+
+  pickAddresMarker = L.marker(
+    {
+      lat,
+      lng,
+    },
+    {
+      icon: iconPickAddress,
+      draggable: 'true'
+    }
+  );
+
+  pickAddresMarker
+    .addTo(markerGroup);
+
+
+};
+
+const setPickAddresMarkerDrag = (cb) => {
+  cb(pickAddresMarkerData);
+
+  pickAddresMarker.on('drag', function (evt) {
+    var marker = evt.target;
+    var position = marker.getLatLng();
+
+    map.panTo(new L.LatLng(position.lat, position.lng))
+
+    pickAddresMarkerData.lat = position.lat;
+    pickAddresMarkerData.lng = position.lng;
+
+    cb(position);
+  });
+
+}
+
+export { renderMarkers, setMapLoad, setPickAddresMarkerDrag };

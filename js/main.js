@@ -1,7 +1,7 @@
 import { showAlert, debounce } from './util.js';
-import { adFormInit } from './ad-form.js';
+import { adFormInit, setAdFormSubmit, setInputAddressValue } from './ad-form.js';
 import { filterInit, setFilterChange } from './filter.js';
-import { renderMarkers, setMapLoad } from './map.js';
+import { renderMarkers, setMapLoad, setPickAddresMarkerDrag } from './map.js';
 import { getData } from './api.js';
 
 const RERENDER_DELAY = 500;
@@ -10,11 +10,25 @@ getData(
   (places) => {
     setMapLoad(() => {
       adFormInit();
+      setAdFormSubmit(() => { });
+
       filterInit();
-      renderMarkers(places);
+
+      const renderMarkersWrap = () => {
+        renderMarkers(
+          places,
+          () => {
+            setPickAddresMarkerDrag((coords) => {
+              setInputAddressValue(coords);
+            });
+          }
+        );
+      };
+
+      renderMarkersWrap();
 
       setFilterChange(debounce(
-        () => {renderMarkers(places);},
+        () => { renderMarkersWrap(); },
         RERENDER_DELAY,
       ));
 

@@ -84,8 +84,8 @@ const debounce = (callback, timeoutDelay) => {
 
 const showAlert = (message) => {
   const alertContainer = document.createElement('div');
-  alertContainer.style.zIndex = 100;
-  alertContainer.style.position = 'absolute';
+  alertContainer.style.zIndex = 1000;
+  alertContainer.style.position = 'fixed';
   alertContainer.style.left = 0;
   alertContainer.style.top = 0;
   alertContainer.style.right = 0;
